@@ -23,8 +23,9 @@ type Entity uintptr
 type Driver interface {
 	Name() string
 	Available() bool
-	Init(cfg *DriverConfig) error
-	OpenInput(p Entity) error
-	OpenOutput(p Entity) error
+	Init(*DriverConfig) error
+	OpenInput(Entity) error
+	OpenOutput(Entity) error
+	Send(time.Time, Entity, []Word) error
 	Enumerate() (*Node, error)
 }
