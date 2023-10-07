@@ -1,7 +1,5 @@
 package midi
 
-type Timestamp uint64
-
 type Word uint32
 
 type Protocol byte
