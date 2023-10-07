@@ -6,7 +6,7 @@ import (
 )
 
 var (
-	driverLock = sync.Mutex{}
+	driverLock = sync.RWMutex{}
 	drivers    = map[string]Driver{}
 )
 
@@ -23,9 +23,13 @@ func Register(d Driver) {
 }
 
 func DriverByName(name string) Driver {
+	driverLock.RLock()
+	defer driverLock.RUnlock()
+
 	drv, ok := drivers[name]
 	if !ok {
 		panic(fmt.Sprintf("unknown driver '%s'", name))
 	}
+
 	return drv
 }
