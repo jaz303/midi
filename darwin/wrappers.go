@@ -3,9 +3,6 @@ package darwin
 // #cgo CFLAGS: -x objective-c
 // #cgo LDFLAGS: -framework CoreMIDI
 // #include <CoreMIDI/MIDIServices.h>
-// #include <CoreFoundation/CFRunLoop.h>
-// #include "binding.h"
-// #include <stdio.h>
 import "C"
 import (
 	"fmt"

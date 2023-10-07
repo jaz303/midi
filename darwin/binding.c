@@ -1,9 +1,6 @@
 #include <CoreMIDI/MIDIServices.h>
-#include <CoreFoundation/CFRunLoop.h>
 #include <CoreServices/CoreServices.h>
-#include <mach/mach.h>
 #include <mach/mach_time.h>
-#include <stdio.h>
 #include <assert.h>
 
 #include "_cgo_export.h"
