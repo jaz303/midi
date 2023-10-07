@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/jaz303/midi"
-	"github.com/jaz303/midi/darwin"
+	_ "github.com/jaz303/midi/darwin"
 	"github.com/jaz303/midi/midi1"
 )
 
@@ -29,7 +29,7 @@ func onEvent(time time.Time, entity midi.Entity, words []midi.Word) {
 }
 
 func main() {
-	var d = darwin.Driver
+	d := midi.DriverByName("Core MIDI")
 	d.Init(&midi.DriverConfig{
 		ReceiveHandler: onEvent,
 	})
@@ -62,9 +62,13 @@ func main() {
 			now := time.Now()
 			d.Send(now, op, []midi.Word{
 				midi1.NoteOn(1, 64, 100),
+				midi1.NoteOn(1, 67, 100),
+				midi1.NoteOn(1, 69, 100),
 			})
 			d.Send(now.Add(100*time.Millisecond), op, []midi.Word{
 				midi1.NoteOff(1, 64, 100),
+				midi1.NoteOff(1, 67, 100),
+				midi1.NoteOff(1, 69, 100),
 			})
 		case evt := <-events:
 			log.Printf("%v %d %d", evt.Time, evt.Entity, evt.Words[0])

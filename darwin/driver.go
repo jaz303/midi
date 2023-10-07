@@ -17,7 +17,9 @@ import (
 	"github.com/jaz303/midi"
 )
 
-var Driver = &driver{}
+func init() {
+	midi.Register(&driver{})
+}
 
 type driver struct{}
 

@@ -40,7 +40,7 @@ func main() {
     
     // Send note-on/note-off
     driver.Send(time.Now(), output, []Word{
-        midi1.NoteOn(1, 64, 100)
+        midi1.NoteOn(1, 64, 100),
     })
     
     driver.Send(time.Now().Add(500 * time.Millisecond), output, []Word{
