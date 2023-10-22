@@ -21,14 +21,14 @@ const (
 	channelShift = 16
 )
 
-func NoteOn(channel uint8, note uint8, velocity uint8) midi.Word {
+func NoteOn(channel uint8, note int8, velocity int8) midi.Word {
 	return noteOn |
 		(midi.Word(channel&0x0F) << channelShift) |
 		(midi.Word(note) << 8) |
 		midi.Word(velocity)
 }
 
-func NoteOff(channel uint8, note uint8, velocity uint8) midi.Word {
+func NoteOff(channel uint8, note int8, velocity int8) midi.Word {
 	return noteOff |
 		(midi.Word(channel&0x0F) << channelShift) |
 		(midi.Word(note) << 8) |
