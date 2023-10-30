@@ -7,9 +7,9 @@ Supported platforms: Mac OS (Core MIDI)
 ## Features
 
   - Simple API
+  - Schedule outgoing events
   - Rock-solid timing; uses underyling driver's best available scheduling method - no `time.Sleep()` here
   - Device enumeration
-  - Schedule outgoing events
 
 ## Basic Usage
 

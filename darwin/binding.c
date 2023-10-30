@@ -9,24 +9,20 @@ static CFStringRef      kClientName     = CFSTR("jaz303/midi");
 static CFStringRef      kInputName      = CFSTR("input");
 static CFStringRef      kOutputName     = CFSTR("output");
 
-static MIDIClientRef    client;
-static MIDIPortRef      inputPort;
-static MIDIPortRef      outputPort;
-
 static_assert(sizeof(void*) >= sizeof(MIDIEndpointRef), "MIDIEndpointRef won't fit in a pointer!");
 
-int init() {
+int init(struct client *c) {
     OSStatus status;
 
-    status = MIDIClientCreate(kClientName, NULL, NULL, &client);
+    status = MIDIClientCreate(kClientName, NULL, NULL, &c->client);
     if (status != 0) {
         return status;
     }
 
-    status = MIDIInputPortCreateWithProtocol(client, kInputName, kMIDIProtocol_1_0, &inputPort, ^void (const MIDIEventList *eventList, void *source) {
-        MIDIEventPacket *pkt = &eventList->packet[0];
+    status = MIDIInputPortCreateWithProtocol(c->client, kInputName, kMIDIProtocol_1_0, &c->inputPort, ^void (const MIDIEventList *eventList, void *source) {
+        MIDIEventPacket *pkt = (MIDIEventPacket*)&eventList->packet[0];
         for (int i = 0; i < eventList->numPackets; i++) {
-            OnReceive(pkt->timeStamp, source, pkt->words, pkt->wordCount);
+            OnReceive(c->goDriver, pkt->timeStamp, source, pkt->words, pkt->wordCount);
             pkt = MIDIEventPacketNext(pkt);
         }
     });
@@ -35,7 +31,7 @@ int init() {
         return status;
     }
 
-    status = MIDIOutputPortCreate(client, kOutputName, &outputPort);
+    status = MIDIOutputPortCreate(c->client, kOutputName, &c->outputPort);
     if (status != 0) {
         return status;
     }
@@ -43,15 +39,19 @@ int init() {
     return 0;
 }
 
-int openInput(MIDIEndpointRef source, void *sourceAsPointer) {
-    OSStatus status = MIDIPortConnectSource(inputPort, source, sourceAsPointer);
+void shutdown(struct client *c) {
+    // TODO
+}
+
+int openInput(struct client *c, MIDIEndpointRef source) {
+    OSStatus status = MIDIPortConnectSource(c->inputPort, source, (void*)((uintptr_t)source));
     return status;
 }
 
-int send(MIDIEndpointRef destination, uint64_t timestamp, uint32_t *words, uint32_t wordCount) {
+int send(struct client *c, MIDIEndpointRef destination, uint64_t timestamp, uint32_t *words, uint32_t wordCount) {
     MIDIEventList lst;
     MIDIEventPacket *pkt = MIDIEventListInit(&lst, kMIDIProtocol_1_0);
     MIDIEventListAdd(&lst, sizeof(MIDIEventList), pkt, timestamp, wordCount, words);
-    MIDISendEventList(outputPort, destination, &lst);
+    MIDISendEventList(c->outputPort, destination, &lst);
     return 0;
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"time"
 
@@ -29,10 +30,12 @@ func onEvent(time time.Time, entity midi.Entity, words []midi.Word) {
 }
 
 func main() {
-	d := midi.DriverByName("Core MIDI")
-	d.Init(&midi.DriverConfig{
-		ReceiveHandler: onEvent,
-	})
+	d, err := midi.NewDriverByName("Core MIDI")
+	if err != nil {
+		panic(fmt.Errorf("Create driver failed: %s", err))
+	}
+
+	d.SetReceiveHandler(onEvent)
 
 	ports, err := d.Enumerate()
 	if err != nil {

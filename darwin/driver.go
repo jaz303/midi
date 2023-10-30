@@ -3,91 +3,78 @@ package darwin
 // #cgo CFLAGS: -x objective-c
 // #cgo CFLAGS: -Wint-to-void-pointer-cast
 // #cgo LDFLAGS: -framework CoreMIDI
-// #include <CoreMIDI/MIDIServices.h>
-// #include <CoreFoundation/CFRunLoop.h>
 // #include "binding.h"
 // #include <stdio.h>
 import "C"
 
 import (
+	"errors"
 	"fmt"
+	"runtime"
 	"time"
 	"unsafe"
 
 	"github.com/jaz303/midi"
 )
 
+func nopHandler() {
+
+}
+
 func init() {
-	midi.Register(&driver{})
+	initTimebase()
+
+	midi.Register(&midi.Stub{
+		Name:      "Core MIDI",
+		Available: true,
+		CreateDriver: func() (midi.Driver, error) {
+			d := new(driver)
+			d.pinner.Pin(d)
+			d.onReceive = midi.NopHandler
+			d.client.goDriver = unsafe.Pointer(d)
+
+			result := C.init(&d.client)
+			if result != 0 {
+				d.pinner.Unpin()
+				return nil, fmt.Errorf("(cgo) init failed with error %d", result)
+			}
+
+			return d, nil
+		},
+	})
 }
 
-type driver struct{}
-
-// Callback function that receives all incoming MIDI events
-var onReceive midi.ReceiveEventHandler
-
-// These values tie the system local time to Core MIDI's
-// internal time.
-var (
-	// Go time at driver init
-	goEpoch time.Time
-
-	// mach_absolute_time() at driver init
-	machEpoch uint64
-
-	// mach timebase for conver
-	// Retrieved from mach_timebase_info()
-	machTimebaseNumer uint64
-	machTimebaseDenom uint64
-)
-
-func timestampToTime(ts uint64) time.Time {
-	ticks := ts - machEpoch
-	nanos := (ticks * machTimebaseNumer) / machTimebaseDenom
-	return goEpoch.Add(time.Duration(nanos))
-}
-
-func timeToTimestamp(t time.Time) uint64 {
-	nanos := uint64(t.Sub(goEpoch))
-	ticks := (nanos * machTimebaseDenom) / machTimebaseNumer
-	return machEpoch + ticks
+type driver struct {
+	pinner    runtime.Pinner
+	client    C.struct_client
+	onReceive midi.ReceiveEventHandler
 }
 
 //export OnReceive
-func OnReceive(timestamp uint64, source unsafe.Pointer, words unsafe.Pointer, wordCount uint32) {
-	if onReceive != nil {
-		goWords := unsafe.Slice((*midi.Word)(words), wordCount)
-		onReceive(timestampToTime(timestamp), midi.Entity(source), goWords)
-	}
+func OnReceive(driverPointer unsafe.Pointer, timestamp uint64, source unsafe.Pointer, words unsafe.Pointer, wordCount uint32) {
+	driver := (*driver)(driverPointer)
+	goWords := unsafe.Slice((*midi.Word)(words), wordCount)
+	driver.onReceive(timestampToTime(timestamp), midi.Entity(source), goWords)
 }
 
-func (d *driver) Name() string {
-	return "Core MIDI"
-}
-
-func (d *driver) Available() bool {
-	return true
-}
-
-func (d *driver) Init(cfg *midi.DriverConfig) error {
-	// TODO: only allow to be called once, error on duplicate
-
-	d.initEpoch()
-
-	onReceive = cfg.ReceiveHandler
-
-	result := C.init()
-	if result != 0 {
-		return fmt.Errorf("C init failed with error %d", result)
-	}
-
+func (d *driver) Close() error {
+	d.onReceive = midi.NopHandler
+	C.shutdown(&d.client)
+	d.pinner.Unpin()
 	return nil
 }
 
+func (d *driver) SetReceiveHandler(hnd midi.ReceiveEventHandler) {
+	if hnd == nil {
+		panic(errors.New("receive handler cannot be nil"))
+	}
+	d.onReceive = hnd
+}
+
 func (d *driver) OpenInput(p midi.Entity) error {
-	result := C.openInput(C.uint(p), unsafe.Pointer(p))
+	result := C.openInput(&d.client, C.uint(p))
 	if result != 0 {
-		return fmt.Errorf("C init failed with error %d", result)
+		return fmt.Errorf("(cgo) open input failed with error %d", result)
 	}
 
 	return nil
@@ -104,6 +91,7 @@ func (d *driver) Send(ts time.Time, dest midi.Entity, words []midi.Word) error {
 	}
 
 	C.send(
+		&d.client,
 		C.uint(dest),
 		C.ulonglong(timeToTimestamp(ts)),
 		(*C.uint)(unsafe.Pointer(&words[0])),
@@ -154,16 +142,6 @@ func (d *driver) Enumerate() (*midi.Node, error) {
 	}
 
 	return root, nil
-}
-
-func (d *driver) initEpoch() {
-	var timebase C.mach_timebase_info_data_t
-	C.mach_timebase_info(&timebase)
-
-	goEpoch = time.Now()
-	machEpoch = uint64(C.mach_absolute_time())
-	machTimebaseNumer = uint64(timebase.numer)
-	machTimebaseDenom = uint64(timebase.denom)
 }
 
 func (d *driver) nodeForRef(typ midi.NodeType, ref midiObjectRef) *midi.Node {

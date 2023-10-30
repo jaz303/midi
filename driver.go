@@ -14,16 +14,13 @@ import "time"
 // of the callback, make a copy.
 type ReceiveEventHandler func(time time.Time, entity Entity, words []Word)
 
-type DriverConfig struct {
-	ReceiveHandler ReceiveEventHandler
-}
+func NopHandler(time time.Time, entity Entity, words []Word) {}
 
 type Entity uintptr
 
 type Driver interface {
-	Name() string
-	Available() bool
-	Init(*DriverConfig) error
+	Close() error
+	SetReceiveHandler(ReceiveEventHandler)
 	OpenInput(Entity) error
 	OpenOutput(Entity) error
 	Send(time.Time, Entity, []Word) error
