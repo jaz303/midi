@@ -11,6 +11,12 @@ static CFStringRef      kOutputName     = CFSTR("output");
 
 static_assert(sizeof(void*) >= sizeof(MIDIEndpointRef), "MIDIEndpointRef won't fit in a pointer!");
 
+struct client* allocateClient() {
+    void *out = malloc(sizeof(struct client));
+    memset(out, 0, sizeof(struct client));
+    return out;
+}
+
 int init(struct client *c) {
     OSStatus status;
 
@@ -40,7 +46,10 @@ int init(struct client *c) {
 }
 
 void shutdown(struct client *c) {
-    // TODO
+    if (c->wasInit) {
+
+    }
+    free(c);
 }
 
 int openInput(struct client *c, MIDIEndpointRef source) {

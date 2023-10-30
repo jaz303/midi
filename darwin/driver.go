@@ -17,10 +17,6 @@ import (
 	"github.com/jaz303/midi"
 )
 
-func nopHandler() {
-
-}
-
 func init() {
 	initTimebase()
 
@@ -29,15 +25,19 @@ func init() {
 		Available: true,
 		CreateDriver: func() (midi.Driver, error) {
 			d := new(driver)
-			d.pinner.Pin(d)
-			d.onReceive = midi.NopHandler
-			d.client.goDriver = unsafe.Pointer(d)
+			d.client = C.allocateClient()         // allocate C struct for client
+			d.pinner.Pin(d)                       // pin driver so client C struct can reference it safely
+			d.client.goDriver = unsafe.Pointer(d) // back reference from C client struct to the driver so event handler can relay events to correct driver instance
+			d.onReceive = midi.NopHandler         // default event handler
 
-			result := C.init(&d.client)
+			result := C.init(d.client)
 			if result != 0 {
+				C.shutdown(d.client)
 				d.pinner.Unpin()
 				return nil, fmt.Errorf("(cgo) init failed with error %d", result)
 			}
+
+			d.client.wasInit = 1
 
 			return d, nil
 		},
@@ -45,8 +45,8 @@ func init() {
 }
 
 type driver struct {
+	client    *C.struct_client
 	pinner    runtime.Pinner
-	client    C.struct_client
 	onReceive midi.ReceiveEventHandler
 }
 
@@ -59,7 +59,7 @@ func OnReceive(driverPointer unsafe.Pointer, timestamp uint64, source unsafe.Poi
 
 func (d *driver) Close() error {
 	d.onReceive = midi.NopHandler
-	C.shutdown(&d.client)
+	C.shutdown(d.client)
 	d.pinner.Unpin()
 	return nil
 }
@@ -72,7 +72,7 @@ func (d *driver) SetReceiveHandler(hnd midi.ReceiveEventHandler) {
 }
 
 func (d *driver) OpenInput(p midi.Entity) error {
-	result := C.openInput(&d.client, C.uint(p))
+	result := C.openInput(d.client, C.uint(p))
 	if result != 0 {
 		return fmt.Errorf("(cgo) open input failed with error %d", result)
 	}
@@ -91,7 +91,7 @@ func (d *driver) Send(ts time.Time, dest midi.Entity, words []midi.Word) error {
 	}
 
 	C.send(
-		&d.client,
+		d.client,
 		C.uint(dest),
 		C.ulonglong(timeToTimestamp(ts)),
 		(*C.uint)(unsafe.Pointer(&words[0])),

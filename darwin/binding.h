@@ -3,12 +3,14 @@
 #include <mach/mach_time.h>
 
 struct client {
+    int             wasInit;
     MIDIClientRef   client;
     MIDIPortRef     inputPort;
     MIDIPortRef     outputPort;
     void            *goDriver;
 };
 
+struct client* allocateClient();
 int init(struct client *c);
 void shutdown(struct client *c);
 int openInput(struct client *c, MIDIEndpointRef source);
