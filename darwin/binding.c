@@ -64,3 +64,22 @@ int send(struct client *c, MIDIEndpointRef destination, uint64_t timestamp, uint
     MIDISendEventList(c->outputPort, destination, &lst);
     return 0;
 }
+
+static void sysExComplete(MIDISysexSendRequest *request) {
+    free(request->completionRefCon);
+    free(request);
+}
+
+OSStatus sendSysEx(struct client *c, MIDIEndpointRef destination, uint8_t *data, uint32_t len) {
+    uint8_t *copy = malloc(len);
+    memcpy(copy, data, len);
+
+    MIDISysexSendRequest *req = malloc(sizeof(MIDISysexSendRequest));
+    memset(req, 0, sizeof(MIDISysexSendRequest));
+    req->destination = destination;
+    req->data = copy;
+    req->bytesToSend = len;
+    req->completionProc = sysExComplete;
+
+    return MIDISendSysex(req);
+}

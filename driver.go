@@ -24,5 +24,6 @@ type Driver interface {
 	OpenInput(Entity) error
 	OpenOutput(Entity) error
 	Send(time.Time, Entity, []Word) error
+	SendSysEx(Entity, []byte) error
 	Enumerate() (*Node, error)
 }

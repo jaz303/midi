@@ -101,6 +101,21 @@ func (d *driver) Send(ts time.Time, dest midi.Entity, words []midi.Word) error {
 	return nil
 }
 
+func (d *driver) SendSysEx(dest midi.Entity, data []byte) error {
+	res := C.sendSysEx(
+		d.client,
+		C.uint(dest),
+		(*C.uint8_t)(unsafe.Pointer(&data[0])),
+		C.uint(len(data)),
+	)
+
+	if res != 0 {
+		return fmt.Errorf("send sysex to destination %d failed with OSStatus=%d", dest, res)
+	}
+
+	return nil
+}
+
 func (d *driver) Enumerate() (*midi.Node, error) {
 	root := &midi.Node{
 		Type: midi.Root,
