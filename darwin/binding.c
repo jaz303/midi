@@ -65,7 +65,6 @@ OSStatus send(struct client *c, MIDIEndpointRef destination, uint64_t timestamp,
 }
 
 static void sysExComplete(MIDISysexSendRequest *request) {
-    free(request->completionRefCon);
     free(request);
 }
 
