@@ -41,6 +41,9 @@ func timestampToTime(ts uint64) time.Time {
 }
 
 func timeToTimestamp(t time.Time) uint64 {
+	if t.IsZero() {
+		return 0
+	}
 	nanos := uint64(t.Sub(goEpoch))
 	ticks := (nanos * machTimebaseDenom) / machTimebaseNumer
 	return machEpoch + ticks
