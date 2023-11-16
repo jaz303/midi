@@ -90,13 +90,17 @@ func (d *driver) Send(ts time.Time, dest midi.Entity, words []midi.Word) error {
 		return nil
 	}
 
-	C.send(
+	res := C.send(
 		d.client,
 		C.uint(dest),
 		C.ulonglong(timeToTimestamp(ts)),
 		(*C.uint)(unsafe.Pointer(&words[0])),
 		C.uint(len(words)),
 	)
+
+	if res != 0 {
+		return fmt.Errorf("send to destination %d failed with OSStatus=%d", dest, res)
+	}
 
 	return nil
 }

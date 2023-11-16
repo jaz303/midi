@@ -57,12 +57,11 @@ int openInput(struct client *c, MIDIEndpointRef source) {
     return status;
 }
 
-int send(struct client *c, MIDIEndpointRef destination, uint64_t timestamp, uint32_t *words, uint32_t wordCount) {
+OSStatus send(struct client *c, MIDIEndpointRef destination, uint64_t timestamp, uint32_t *words, uint32_t wordCount) {
     MIDIEventList lst;
     MIDIEventPacket *pkt = MIDIEventListInit(&lst, kMIDIProtocol_1_0);
     MIDIEventListAdd(&lst, sizeof(MIDIEventList), pkt, timestamp, wordCount, words);
-    MIDISendEventList(c->outputPort, destination, &lst);
-    return 0;
+    return MIDISendEventList(c->outputPort, destination, &lst);
 }
 
 static void sysExComplete(MIDISysexSendRequest *request) {
