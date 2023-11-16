@@ -69,13 +69,10 @@ static void sysExComplete(MIDISysexSendRequest *request) {
 }
 
 OSStatus sendSysEx(struct client *c, MIDIEndpointRef destination, uint8_t *data, uint32_t len) {
-    uint8_t *copy = malloc(len);
-    memcpy(copy, data, len);
-
     MIDISysexSendRequest *req = malloc(sizeof(MIDISysexSendRequest));
     memset(req, 0, sizeof(MIDISysexSendRequest));
     req->destination = destination;
-    req->data = copy;
+    req->data = data;
     req->bytesToSend = len;
     req->completionProc = sysExComplete;
 
