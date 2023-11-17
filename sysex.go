@@ -1,7 +1,7 @@
 package midi
 
 const (
-	msgTypeData = (1 << 28)
+	msgTypeData = (3 << 28)
 
 	packetBytesShift = 16
 	statusShift      = 20
@@ -13,40 +13,40 @@ const (
 	sysExEnd        = 3 << statusShift
 )
 
-func SysExV1ToUMP(dst []Word, sysEx []byte) []Word {
-	sysEx = sysEx[1 : len(sysEx)-1] // strip 0xF0 and 0xF7, UMP doesn't require them
+func SysExV1ToUMP(dst []Word, data []byte) []Word {
+	data = data[1 : len(data)-1] // strip 0xF0 and 0xF7, UMP doesn't require them
 
 	var status Word = sysExStart
-	for len(sysEx) > 0 {
-		bytesInPacket := min(6, len(sysEx))
+	for len(data) > 0 {
+		bytesInPacket := min(6, len(data))
 
-		var w1 Word = msgTypeData | status | Word(bytesInPacket<<16)
+		var w1 Word = msgTypeData | status | Word(bytesInPacket<<packetBytesShift)
 		var w2 Word = 0
 
 		switch bytesInPacket {
 		case 6:
-			w2 |= Word(sysEx[5])
+			w2 |= Word(data[5])
 			fallthrough
 		case 5:
-			w2 |= Word(sysEx[4]) << 8
+			w2 |= Word(data[4]) << 8
 			fallthrough
 		case 4:
-			w2 |= Word(sysEx[3]) << 16
+			w2 |= Word(data[3]) << 16
 			fallthrough
 		case 3:
-			w2 |= Word(sysEx[2]) << 24
+			w2 |= Word(data[2]) << 24
 			fallthrough
 		case 2:
-			w1 |= Word(sysEx[1])
+			w1 |= Word(data[1])
 			fallthrough
 		case 1:
-			w1 |= Word(sysEx[0]) << 8
+			w1 |= Word(data[0]) << 8
 		}
 
 		dst = append(dst, w1, w2)
 
 		status = sysExContinue
-		sysEx = sysEx[bytesInPacket:]
+		data = data[bytesInPacket:]
 	}
 
 	if len(dst) == 2 {
