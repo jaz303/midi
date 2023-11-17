@@ -17,6 +17,8 @@ import (
 	"github.com/jaz303/midi"
 )
 
+var immediately time.Time
+
 func init() {
 	initTimebase()
 
@@ -105,19 +107,12 @@ func (d *driver) Send(ts time.Time, dest midi.Entity, words []midi.Word) error {
 	return nil
 }
 
-func (d *driver) SendSysEx(dest midi.Entity, data []byte) error {
-	res := C.sendSysEx(
-		d.client,
-		C.uint(dest),
-		(*C.uint8_t)(unsafe.Pointer(&data[0])),
-		C.uint(len(data)),
-	)
+func (d *driver) SendSysEx(dest midi.Entity, data []midi.Word) error {
+	return d.Send(immediately, dest, data)
+}
 
-	if res != 0 {
-		return fmt.Errorf("send sysex to destination %d failed with OSStatus=%d", dest, res)
-	}
-
-	return nil
+func (d *driver) SendSysExV1(dest midi.Entity, data []byte) error {
+	return d.Send(immediately, dest, midi.SysExV1ToUMP(nil, data))
 }
 
 func (d *driver) Enumerate() (*midi.Node, error) {
