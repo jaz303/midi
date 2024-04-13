@@ -33,6 +33,7 @@ type Node struct {
 	Manufacturer string
 	Model        string
 	Name         string
+	Metadata     map[string]any
 
 	Children []*Node
 

@@ -2,7 +2,7 @@
 
 Low-level MIDI library for Go. Very much alpha for now.
 
-Supported platforms: Mac OS (Core MIDI)
+Supported platforms: Linux (ALSA), Mac OS (Core MIDI)
 
 ## Features
 
@@ -48,3 +48,7 @@ func main() {
     })
 }
 ```
+
+## Q&A
+
+

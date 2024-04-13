@@ -13,7 +13,7 @@ var (
 type Stub struct {
 	Name         string
 	Available    bool
-	CreateDriver func() (Driver, error)
+	CreateDriver func(name string) (Driver, error)
 }
 
 func Register(d *Stub) {
@@ -28,14 +28,14 @@ func Register(d *Stub) {
 	drivers[d.Name] = d
 }
 
-func NewDriverByName(name string) (Driver, error) {
+func NewDriverByName(driverName string, clientName string) (Driver, error) {
 	driverLock.RLock()
 	defer driverLock.RUnlock()
 
-	drv, ok := drivers[name]
+	drv, ok := drivers[driverName]
 	if !ok {
-		panic(fmt.Sprintf("unknown driver '%s'", name))
+		panic(fmt.Sprintf("unknown driver '%s'", driverName))
 	}
 
-	return drv.CreateDriver()
+	return drv.CreateDriver(clientName)
 }

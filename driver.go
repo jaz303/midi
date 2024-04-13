@@ -1,6 +1,11 @@
 package midi
 
-import "time"
+import (
+	"errors"
+	"time"
+
+	"github.com/jaz303/midi/ump"
+)
 
 // ReceiveEventHandler represents a callback function that receives incoming
 // MIDI events from an Entity.
@@ -12,19 +17,22 @@ import "time"
 // operation which can affect the slice's underlying storage (e.g. append())
 // should be attempted. If the data needs to be persist beyond the lifetime
 // of the callback, make a copy.
-type ReceiveEventHandler func(time time.Time, entity Entity, words []Word)
+type ReceiveEventHandler func(time time.Time, entity Entity, words []ump.Word)
 
-func NopHandler(time time.Time, entity Entity, words []Word) {}
+func NopHandler(time time.Time, entity Entity, words []ump.Word) {}
 
 type Entity uintptr
 
 type Driver interface {
+	Name() string
 	Close() error
 	SetReceiveHandler(ReceiveEventHandler)
 	OpenInput(Entity) error
 	OpenOutput(Entity) error
-	Send(time.Time, Entity, []Word) error
-	SendSysEx(Entity, []Word) error
+	Send(time.Time, Entity, []ump.Word) error
+	SendSysEx(Entity, []ump.Word) error
 	SendSysExV1(Entity, []byte) error
 	Enumerate() (*Node, error)
 }
+
+var ErrDriverNotAvailable = errors.New("driver not available")
